@@ -109,7 +109,7 @@ fn main() {
 
     info!("Listening on 127.0.0.1:[YOUR_PORT]");
 
-    let state = warp::any().map(move || Context { db: Connection::connect("postgres://postgres@localhost:5433", TlsMode::Prefer(&NativeTls::new().unwrap())).unwrap() });
+    let state = warp::any().map(move || Context { db: Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap() });
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
 
     warp::serve(
