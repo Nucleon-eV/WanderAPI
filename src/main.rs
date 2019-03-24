@@ -84,7 +84,7 @@ juniper::graphql_object!(Query: Context |&self| {
             }
         }
 
-        field hiking_trail(&executor) -> FieldResult<Vec<HikingTrail>> {
+        field hiking_trails(&executor) -> FieldResult<Vec<HikingTrail>> {
             // Get the context from the executor.
             let context = executor.context();
             // Get a db connection.
