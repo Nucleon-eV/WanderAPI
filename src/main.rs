@@ -73,7 +73,8 @@ juniper::graphql_object!(Query: Context |&self| {
             let connection = &context.db;
             // Execute a db query.
             // Note the use of `?` to propagate errors.
-            let hiking_trail_db = &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id])?;
+            let correct_id = id as i32;
+            let hiking_trail_db = &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&correct_id])?;
             let first_result = &hiking_trail_db.get(0);
             let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
             // Return the result.
