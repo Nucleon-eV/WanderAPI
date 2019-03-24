@@ -20,7 +20,7 @@ const USAGE: &'static str = "
 Wander API
 
 Usage:
-  WanderAPI <postgres_url> <port>
+  WanderAPI <postgresurl> <port>
   WanderAPI (-h | --help)
 
 Options:
@@ -30,7 +30,7 @@ Options:
 
 #[derive(Debug, Deserialize)]
 struct Args {
-    arg_postgres_url: String,
+    arg_postgresurl: String,
     arg_port: u16,
 }
 
@@ -106,7 +106,7 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
-    let postgres_url = args.arg_postgres_url;
+    let postgres_url = args.arg_postgresurl;
     let port = args.arg_port;
 
     ::std::env::set_var("RUST_LOG", "WanderAPI");
