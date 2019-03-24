@@ -87,7 +87,7 @@ juniper::graphql_object!(Mutation: Context |&self| {
 
         field createHikingTrail(&executor, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
             let rows_updated = executor.context().db.execute("INSERT INTO hiking_trails (name, location) VALUES ($1, $2)", &[&new_hiking_trail.name, &new_hiking_trail.location])?;
-            let hiking_trail_db = &executor.context().db.query("SELECT id, name, location FROM hiking_trails WHERE ROWNUM = $1", &[&rows_updated.to_string()])?;
+            let hiking_trail_db = &executor.context().db.query("SELECT id, name, location FROM hiking_trails OFFSET = $1 LIMIT 1", &[&rows_updated.to_string()])?;
             let first_result = &hiking_trail_db.get(0);
             let hiking_trail = HikingTrail {id: first_result.get(0), name: new_hiking_trail.name, location: new_hiking_trail.location};
             Ok(hiking_trail)
