@@ -1,5 +1,7 @@
 extern crate docopt;
 extern crate env_logger;
+#[macro_use]
+extern crate juniper;
 extern crate juniper_warp;
 #[macro_use]
 extern crate log as irrelevant_log;
@@ -74,8 +76,8 @@ juniper::graphql_object!(Query: Context |&self| {
             // Execute a db query.
             // Note the use of `?` to propagate errors.
             let hiking_trail_db = &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id])?;
-            if (hiking_trail_db.len() == 0) {
-                FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" }))
+            if hiking_trail_db.len() == 0 {
+                Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
             } else {
                 let first_result = &hiking_trail_db.get(0);
                 let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
@@ -91,8 +93,8 @@ juniper::graphql_object!(Mutation: Context |&self| {
 
         field createHikingTrail(&executor, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
             let hiking_trail_db = executor.context().db.query("INSERT INTO hiking_trails (name, location) VALUES ($1, $2) RETURNING id, name, location", &[&new_hiking_trail.name, &new_hiking_trail.location])?;
-            if (hiking_trail_db.len() == 0) {
-                FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" }))
+            if hiking_trail_db.len() == 0 {
+                Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
             } else {
                 let first_result = &hiking_trail_db.get(0);
                 let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
