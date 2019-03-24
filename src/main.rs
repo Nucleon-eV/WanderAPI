@@ -91,13 +91,13 @@ juniper::graphql_object!(Query: Context |&self| {
             let connection = &context.db;
 
             let mut hiking_trails = Vec::new();
-            for row in &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id]).unwrap() {
+            for row in &connection.query("SELECT id, name, location FROM hiking_trails", &[]).unwrap() {
                 let hiking_trail = HikingTrail {
                     id: row.get(0),
                     name: row.get(1),
                     location: row.get(2),
                 };
-                hiking_trails.push();
+                hiking_trails.push(hiking_trail);
             }
             if hiking_trails.len() == 0 {
                 Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
