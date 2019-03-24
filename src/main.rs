@@ -101,7 +101,7 @@ fn main() {
             ))
     });
 
-    info!("Listening on 127.0.0.1:8080");
+    info!("Listening on 127.0.0.1:8081");
 
     let state = warp::any().map(move || Context { db: Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap() });
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
@@ -114,5 +114,5 @@ fn main() {
             .or(warp::path("graphql").and(graphql_filter))
             .with(log),
     )
-        .run(([127, 0, 0, 1], 8080));
+        .run(([127, 0, 0, 1], 8081));
 }
