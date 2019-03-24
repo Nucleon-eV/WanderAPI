@@ -89,7 +89,6 @@ fn main() {
     ::std::env::set_var("RUST_LOG", "warp_server");
     env_logger::init();
 
-    let negotiator = NativeTls::new().unwrap();
     let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
     conn.execute("CREATE TABLE IF NOT EXISTS hiking_trails (
                     id              VARCHAR PRIMARY KEY,
@@ -97,8 +96,9 @@ fn main() {
                     location        VARCHAR NOT NULL
                   )", &[]).unwrap();
 
+    println!("test");
     let log = log("warp_server");
-
+    println!("test1");
     let homepage = warp::path::end().map(|| {
         Response::builder()
             .header("content-type", "text/html")
