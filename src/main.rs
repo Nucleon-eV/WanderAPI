@@ -95,7 +95,7 @@ fn main() {
                     location        VARCHAR NOT NULL
                   )", &[]).unwrap();
 
-    //let log = log("WanderAPI");
+    let log = log("WanderAPI");
     let homepage = warp::path::end().map(|| {
         Response::builder()
             .header("content-type", "text/html")
@@ -116,7 +116,7 @@ fn main() {
             .and(juniper_warp::graphiql_filter("/graphql"))
             .or(homepage)
             .or(warp::path("graphql").and(graphql_filter))
-            //.with(log),
+            .with(log),
     )
-        .run(([127, 0, 0, 1], args[2].parse::<u16>().unwrap()));
+        .run(([0, 0, 0, 0], args[2].parse::<u16>().unwrap()));
 }
