@@ -1,7 +1,7 @@
 extern crate env_logger;
 extern crate juniper_warp;
 #[macro_use]
-extern crate log as irrelevant_log;
+extern crate log;
 #[macro_use]
 extern crate postgres;
 #[macro_use]
@@ -12,7 +12,6 @@ use std::env;
 
 use juniper::FieldResult;
 use postgres::{Connection, TlsMode};
-use postgres::tls::native_tls::NativeTls;
 use warp::{Filter, http::Response, log};
 
 #[derive(juniper::GraphQLObject, FromSql, Debug)]
@@ -86,7 +85,7 @@ fn schema() -> Schema {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    ::std::env::set_var("RUST_LOG", "warp_server");
+    ::std::env::set_var("RUST_LOG", "WanderAPI");
     env_logger::init();
 
     let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
