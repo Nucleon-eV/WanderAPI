@@ -58,6 +58,15 @@ struct NewHikingTrail {
     location: String,
 }
 
+#[derive(juniper::GraphQLInputObject)]
+#[graphql(description = "A Point of Interest")]
+struct NewPOI {
+    name: String,
+    hiking_trail: i32,
+    description: String,
+    location: String,
+}
+
 struct Context {
     db: Connection, // TODO wrap with helper
 }
@@ -160,6 +169,22 @@ juniper::graphql_object!(Mutation: Context |&self| {
                 }
                 let hiking_trail = HikingTrail {id: id, name: first_result.get(1), location: first_result.get(2), pois: pois};
                 Ok(hiking_trail)
+            }
+        }
+
+        field createPOI(&executor, new_poi: NewPOI) -> FieldResult<POI> {
+            let poi_db = executor.context().db.query("INSERT INTO pois (hiking_trail, name, description, location) VALUES ($1, $2, $3, $4) RETURNING id, name, description, location", &[&new_poi.hiking_trail, &new_poi.name, &new_poi.description, &new_poi.location])?;
+            if poi_db.len() == 0 {
+                Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
+            } else {
+                let first_result = &poi_db.get(0);
+                let poi = POI {
+                    id: first_result.get(0),
+                    name: first_result.get(1),
+                    description: first_result.get(2),
+                    location: first_result.get(3),
+                };
+                Ok(poi)
             }
         }
     });
