@@ -12,7 +12,7 @@ extern crate serde_derive;
 extern crate warp;
 
 use docopt::Docopt;
-use juniper::FieldResult;
+use juniper::{FieldError, FieldResult};
 use postgres::{Connection, TlsMode};
 use warp::{Filter, http::Response, log};
 
@@ -75,7 +75,7 @@ juniper::graphql_object!(Query: Context |&self| {
             // Note the use of `?` to propagate errors.
             let hiking_trail_db = &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id])?;
             if (hiking_trail_db.len() == 0) {
-                Err("No data found")
+                FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" }))
             } else {
                 let first_result = &hiking_trail_db.get(0);
                 let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
@@ -92,7 +92,7 @@ juniper::graphql_object!(Mutation: Context |&self| {
         field createHikingTrail(&executor, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
             let hiking_trail_db = executor.context().db.query("INSERT INTO hiking_trails (name, location) VALUES ($1, $2) RETURNING id, name, location", &[&new_hiking_trail.name, &new_hiking_trail.location])?;
             if (hiking_trail_db.len() == 0) {
-                Err("No data found")
+                FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" }))
             } else {
                 let first_result = &hiking_trail_db.get(0);
                 let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
