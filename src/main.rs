@@ -114,7 +114,7 @@ fn main() {
 
     let conn = Connection::connect(postgres_url.clone(), TlsMode::None).unwrap();
     conn.execute("CREATE TABLE IF NOT EXISTS hiking_trails (
-                    id              VARCHAR PRIMARY KEY,
+                    id              SERIAL PRIMARY KEY,
                     name            VARCHAR NOT NULL,
                     location        VARCHAR NOT NULL
                   )", &[]).unwrap();
