@@ -12,6 +12,7 @@ use std::env;
 
 use juniper::FieldResult;
 use postgres::{Connection, TlsMode};
+use postgres::tls::native_tls::NativeTls;
 use warp::{Filter, http::Response, log};
 
 #[derive(juniper::GraphQLObject, FromSql, Debug)]
@@ -88,7 +89,8 @@ fn main() {
     ::std::env::set_var("RUST_LOG", "warp_server");
     env_logger::init();
 
-    let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
+    let negotiator = NativeTls::new().unwrap();
+    let conn = Connection::connect(&*args[1], TlsMode::Prefer(&negotiator)).unwrap();
     conn.execute("CREATE TABLE hiking_trails (
                     id              VARCHAR PRIMARY KEY,
                     name            VARCHAR NOT NULL,
