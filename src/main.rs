@@ -66,8 +66,6 @@ juniper::graphql_object!(Query: Context |&self| {
             "1.0"
         }
 
-        // Arguments to resolvers can either be simple types or input objects.
-        // The executor is a special (optional) argument that allows accessing the context.
         field hiking_trail(&executor, id: i32) -> FieldResult<HikingTrail> {
             // Get the context from the executor.
             let context = executor.context();
@@ -83,6 +81,29 @@ juniper::graphql_object!(Query: Context |&self| {
                 let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
                 // Return the result.
                 Ok(hiking_trail)
+            }
+        }
+
+        field hiking_trail(&executor) -> FieldResult<Vec<HikingTrail>> {
+            // Get the context from the executor.
+            let context = executor.context();
+            // Get a db connection.
+            let connection = &context.db;
+
+            let mut hiking_trails = Vec::new();
+            for row in &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id]).unwrap() {
+                let hiking_trail = HikingTrail {
+                    id: row.get(0),
+                    name: row.get(1),
+                    location: row.get(2),
+                };
+                hiking_trails.push();
+            }
+            if hiking_trails.len() == 0 {
+                Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
+            } else {
+                // Return the result.
+                Ok(hiking_trails)
             }
         }
     });
