@@ -37,7 +37,7 @@ struct Args {
 #[derive(juniper::GraphQLObject, FromSql, Debug)]
 #[graphql(description = "A hiking trail")]
 struct HikingTrail {
-    id: String,
+    id: i32,
     name: String,
     location: String,
 }
