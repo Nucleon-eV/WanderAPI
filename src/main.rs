@@ -66,15 +66,14 @@ juniper::graphql_object!(Query: Context |&self| {
 
         // Arguments to resolvers can either be simple types or input objects.
         // The executor is a special (optional) argument that allows accessing the context.
-        field hiking_trail(&executor, id: String) -> FieldResult<HikingTrail> {
+        field hiking_trail(&executor, id: i32) -> FieldResult<HikingTrail> {
             // Get the context from the executor.
             let context = executor.context();
             // Get a db connection.
             let connection = &context.db;
             // Execute a db query.
             // Note the use of `?` to propagate errors.
-            let correct_id = id as i32;
-            let hiking_trail_db = &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&correct_id])?;
+            let hiking_trail_db = &connection.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id])?;
             let first_result = &hiking_trail_db.get(0);
             let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
             // Return the result.
