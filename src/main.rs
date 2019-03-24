@@ -90,7 +90,7 @@ fn main() {
     env_logger::init();
 
     let negotiator = NativeTls::new().unwrap();
-    let conn = Connection::connect(&*args[1], TlsMode::Prefer(&negotiator)).unwrap();
+    let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
     conn.execute("CREATE TABLE hiking_trails (
                     id              VARCHAR PRIMARY KEY,
                     name            VARCHAR NOT NULL,
@@ -109,7 +109,7 @@ fn main() {
 
     info!("Listening on 127.0.0.1:[YOUR_PORT]");
 
-    let state = warp::any().map(move || Context { db: Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap() });
+    let state = warp::any().map(move || Context { db: conn });
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
 
     warp::serve(
