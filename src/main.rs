@@ -86,7 +86,7 @@ struct Mutation;
 juniper::graphql_object!(Mutation: Context |&self| {
 
         field createHikingTrail(&executor, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
-            let rows_updated = executor.context().db.execute("INSERT INTO hiking_trails (name, location) VALUES ($1, $2)", &[&new_hiking_trail.name, &new_hiking_trail.location])? as i64;
+            let rows_updated = executor.context().db.execute("INSERT INTO hiking_trails (name, location) VALUES ($1, $2)", &[&new_hiking_trail.name, &new_hiking_trail.location])? as i32;
             println!("{}", rows_updated);
             let hiking_trail_db = &executor.context().db.query("SELECT id, name, location FROM hiking_trails OFFSET $1 LIMIT 1", &[&rows_updated])?;
             let first_result = &hiking_trail_db.get(0);
