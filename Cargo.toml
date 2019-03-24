@@ -11,6 +11,9 @@ warp = "0.1.14"
 postgres-derive = "0.3"
 env_logger = "0.6.1"
 log = "0.4.6"
+docopt = "1"
+serde = "1.0"
+serde_derive = "1.0"
 
 [dependencies.postgres]
 version = "0.15"

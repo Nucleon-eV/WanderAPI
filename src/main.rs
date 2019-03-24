@@ -1,3 +1,4 @@
+extern crate docopt;
 extern crate env_logger;
 extern crate juniper_warp;
 #[macro_use]
@@ -6,13 +7,32 @@ extern crate log as irrelevant_log;
 extern crate postgres;
 #[macro_use]
 extern crate postgres_derive;
+#[macro_use]
+extern crate serde_derive;
 extern crate warp;
 
-use std::env;
-
+use docopt::Docopt;
 use juniper::FieldResult;
 use postgres::{Connection, TlsMode};
 use warp::{Filter, http::Response, log};
+
+const USAGE: &'static str = "
+Wander API
+
+Usage:
+  WanderAPI <postgres_url> <port>
+  WanderAPI (-h | --help)
+
+Options:
+  -h --help     Show this screen.
+";
+
+
+#[derive(Debug, Deserialize)]
+struct Args {
+    arg_postgres_url: String,
+    arg_port: u16,
+}
 
 #[derive(juniper::GraphQLObject, FromSql, Debug)]
 #[graphql(description = "A hiking trail")]
@@ -83,12 +103,16 @@ fn schema() -> Schema {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Args = Docopt::new(USAGE)
+        .and_then(|d| d.deserialize())
+        .unwrap_or_else(|e| e.exit());
+    let postgres_url = args.arg_postgres_url;
+    let port = args.arg_port;
 
     ::std::env::set_var("RUST_LOG", "WanderAPI");
     env_logger::init();
 
-    let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
+    let conn = Connection::connect(postgres_url.clone(), TlsMode::None).unwrap();
     conn.execute("CREATE TABLE IF NOT EXISTS hiking_trails (
                     id              VARCHAR PRIMARY KEY,
                     name            VARCHAR NOT NULL,
@@ -106,7 +130,7 @@ fn main() {
 
     info!("Listening on 127.0.0.1:[YOUR_PORT]");
 
-    let state = warp::any().map(move || Context { db: Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap() });
+    let state = warp::any().map(move || Context { db: Connection::connect(postgres_url.clone(), TlsMode::None).unwrap() });
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
 
 
@@ -118,5 +142,5 @@ fn main() {
             .or(warp::path("graphql").and(graphql_filter))
             .with(log),
     )
-        .run(([0, 0, 0, 0], args[2].parse::<u16>().unwrap()));
+        .run(([0, 0, 0, 0], port));
 }
