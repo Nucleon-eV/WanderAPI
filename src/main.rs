@@ -8,6 +8,8 @@ extern crate postgres;
 extern crate postgres_derive;
 extern crate warp;
 
+use std::env;
+
 use juniper::FieldResult;
 use postgres::{Connection, TlsMode};
 use warp::{Filter, http::Response, log};
@@ -81,10 +83,12 @@ fn schema() -> Schema {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
     ::std::env::set_var("RUST_LOG", "warp_server");
     env_logger::init();
 
-    let conn = Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap();
+    let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
     conn.execute("CREATE TABLE hiking_trails (
                     id              VARCHAR PRIMARY KEY,
                     name            VARCHAR NOT NULL,
@@ -101,7 +105,7 @@ fn main() {
             ))
     });
 
-    info!("Listening on 127.0.0.1:8081");
+    info!("Listening on 127.0.0.1:[YOUR_PORT]");
 
     let state = warp::any().map(move || Context { db: Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap() });
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
@@ -114,5 +118,5 @@ fn main() {
             .or(warp::path("graphql").and(graphql_filter))
             .with(log),
     )
-        .run(([127, 0, 0, 1], 8081));
+        .run(([127, 0, 0, 1], args[2].parse::<u16>().unwrap()));
 }
