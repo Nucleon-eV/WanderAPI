@@ -91,7 +91,7 @@ fn main() {
 
     let negotiator = NativeTls::new().unwrap();
     let conn = Connection::connect(&*args[1], TlsMode::None).unwrap();
-    conn.execute("CREATE TABLE hiking_trails (
+    conn.execute("CREATE TABLE IF NOT EXISTS hiking_trails (
                     id              VARCHAR PRIMARY KEY,
                     name            VARCHAR NOT NULL,
                     location        VARCHAR NOT NULL
