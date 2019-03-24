@@ -1,7 +1,7 @@
 extern crate env_logger;
 extern crate juniper_warp;
 #[macro_use]
-extern crate log;
+extern crate log as irrelevant_log;
 #[macro_use]
 extern crate postgres;
 #[macro_use]
