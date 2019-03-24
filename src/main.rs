@@ -5,10 +5,7 @@ extern crate juniper;
 extern crate juniper_warp;
 #[macro_use]
 extern crate log as irrelevant_log;
-#[macro_use]
 extern crate postgres;
-#[macro_use]
-extern crate postgres_derive;
 #[macro_use]
 extern crate serde_derive;
 extern crate warp;
@@ -36,15 +33,25 @@ struct Args {
     arg_port: u16,
 }
 
-#[derive(juniper::GraphQLObject, FromSql, Debug)]
+#[derive(juniper::GraphQLObject)]
 #[graphql(description = "A hiking trail")]
 struct HikingTrail {
     id: i32,
     name: String,
     location: String,
+    pois: Vec<POI>,
 }
 
-#[derive(juniper::GraphQLInputObject, ToSql, Debug)]
+#[derive(juniper::GraphQLObject)]
+#[graphql(description = "A Point of Interest")]
+struct POI {
+    id: i32,
+    name: String,
+    description: String,
+    location: String,
+}
+
+#[derive(juniper::GraphQLInputObject)]
 #[graphql(description = "A hiking trail")]
 struct NewHikingTrail {
     name: String,
@@ -78,7 +85,17 @@ juniper::graphql_object!(Query: Context |&self| {
                 Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
             } else {
                 let first_result = &hiking_trail_db.get(0);
-                let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
+                let mut pois = Vec::new();
+                for poi_row in &connection.query("SELECT id, name, description, location FROM pois WHERE hiking_trail = $1", &[&id]).unwrap() {
+                    let poi = POI {
+                        id: poi_row.get(0),
+                        name: poi_row.get(1),
+                        description: poi_row.get(2),
+                        location: poi_row.get(3),
+                    };
+                    pois.push(poi);
+                }
+                let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2), pois: pois};
                 // Return the result.
                 Ok(hiking_trail)
             }
@@ -91,11 +108,23 @@ juniper::graphql_object!(Query: Context |&self| {
             let connection = &context.db;
 
             let mut hiking_trails = Vec::new();
-            for row in &connection.query("SELECT id, name, location FROM hiking_trails", &[]).unwrap() {
+            for trail in &connection.query("SELECT id, name, location FROM hiking_trails", &[]).unwrap() {
+                let mut pois = Vec::new();
+                let id: i32 = trail.get(0);
+                for poi_row in &connection.query("SELECT id, name, description, location FROM pois WHERE hiking_trail = $1", &[&id]).unwrap() {
+                    let poi = POI {
+                        id: poi_row.get(0),
+                        name: poi_row.get(1),
+                        description: poi_row.get(2),
+                        location: poi_row.get(3),
+                    };
+                    pois.push(poi);
+                }
                 let hiking_trail = HikingTrail {
-                    id: row.get(0),
-                    name: row.get(1),
-                    location: row.get(2),
+                    id: id,
+                    name: trail.get(1),
+                    location: trail.get(2),
+                    pois: pois,
                 };
                 hiking_trails.push(hiking_trail);
             }
@@ -118,7 +147,18 @@ juniper::graphql_object!(Mutation: Context |&self| {
                 Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
             } else {
                 let first_result = &hiking_trail_db.get(0);
-                let hiking_trail = HikingTrail {id: first_result.get(0), name: first_result.get(1), location: first_result.get(2)};
+                let id: i32 = first_result.get(0);
+                let mut pois = Vec::new();
+                for poi_row in &executor.context().db.query("SELECT id, name, description, location FROM pois WHERE hiking_trail = $1", &[&id]).unwrap() {
+                    let poi = POI {
+                        id: poi_row.get(0),
+                        name: poi_row.get(1),
+                        description: poi_row.get(2),
+                        location: poi_row.get(3),
+                    };
+                    pois.push(poi);
+                }
+                let hiking_trail = HikingTrail {id: id, name: first_result.get(1), location: first_result.get(2), pois: pois};
                 Ok(hiking_trail)
             }
         }
@@ -143,11 +183,21 @@ fn main() {
     env_logger::init();
 
     let conn = Connection::connect(postgres_url.clone(), TlsMode::None).unwrap();
-    conn.execute("CREATE TABLE IF NOT EXISTS hiking_trails (
+    conn.batch_execute("
+                CREATE TABLE IF NOT EXISTS hiking_trails (
                     id              SERIAL PRIMARY KEY,
                     name            VARCHAR NOT NULL,
                     location        VARCHAR NOT NULL
-                  )", &[]).unwrap();
+                );
+
+                CREATE TABLE IF NOT EXISTS pois (
+                    id              SERIAL PRIMARY KEY,
+                    hiking_trail    SERIAL,
+                    name            VARCHAR NOT NULL,
+                    description     TEXT,
+                    location        VARCHAR NOT NULL
+                );
+                ").unwrap();
 
     let log = log("WanderAPI");
     let homepage = warp::path::end().map(|| {
