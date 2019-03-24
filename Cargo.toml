@@ -8,8 +8,10 @@ edition = "2018"
 juniper = "0.11"
 juniper_warp = "0.2.0"
 warp = "0.1.14"
-postgres = "0.15"
 postgres-derive = "0.3"
 env_logger = "0.6.1"
 log = "0.4.6"
-native-tls = "0.2.2"
+
+[dependencies.postgres]
+version = "0.15"
+features = ["with-native-tls"]
