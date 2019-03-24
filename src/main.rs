@@ -96,7 +96,7 @@ fn main() {
                   )", &[]).unwrap();
 
     println!("test");
-    let log = log("warp_server");
+    let log = log("WanderAPI");
     println!("test1");
     let homepage = warp::path::end().map(|| {
         Response::builder()
