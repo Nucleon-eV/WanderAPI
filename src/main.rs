@@ -38,7 +38,7 @@ Options:
 struct Args {}
 
 fn main() {
-    let args: Args = Docopt::new(USAGE)
+    let _args: Args = Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 

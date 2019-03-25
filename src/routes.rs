@@ -1,5 +1,5 @@
 use juniper::RootNode;
-use rocket::{get, post, Request, Response};
+use rocket::{get, post, Response};
 use rocket::http::Status;
 use rocket::response::content;
 use rocket::State;
@@ -19,8 +19,8 @@ pub fn graphiql() -> content::Html<String> {
     juniper_rocket::graphiql_source("/graphql")
 }
 
-#[get("/graphql?<request>")]
-pub fn get_graphql_handler() -> Response {
+#[get("/graphql")]
+pub fn get_graphql_handler<'a>() -> Response<'a> {
     Response::build()
         .status(Status::MethodNotAllowed)
         .raw_header("Allow", "POST")
