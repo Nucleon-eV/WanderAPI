@@ -18,13 +18,13 @@ pub fn graphiql() -> content::Html<String> {
     juniper_rocket::graphiql_source("/graphql")
 }
 
-#[get("/graphql?query")]
+#[get("/graphql?<query>")]
 pub fn get_graphql_handler(
     context: WanderAPIDbConn,
-    request: juniper_rocket::GraphQLRequest,
+    query: juniper_rocket::GraphQLRequest,
     schema: State<Schema>,
 ) -> juniper_rocket::GraphQLResponse {
-    request.execute(&schema, &Context { connection: context })
+    query.execute(&schema, &Context { connection: context })
 }
 
 #[post("/graphql", data = "<request>")]
