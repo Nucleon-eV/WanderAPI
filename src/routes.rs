@@ -1,5 +1,6 @@
 use juniper::RootNode;
-use rocket::{get, post};
+use rocket::{get, post, Request, Response};
+use rocket::http::Status;
 use rocket::response::content;
 use rocket::State;
 
@@ -19,12 +20,11 @@ pub fn graphiql() -> content::Html<String> {
 }
 
 #[get("/graphql?<request>")]
-pub fn get_graphql_handler(
-    context: WanderAPIDbConn,
-    request: juniper_rocket::GraphQLRequest,
-    schema: State<Schema>,
-) -> juniper_rocket::GraphQLResponse {
-    request.execute(&schema, &Context { connection: context })
+pub fn get_graphql_handler() -> Response {
+    Response::build()
+        .status(Status::MethodNotAllowed)
+        .raw_header("Allow", "POST")
+        .finalize()
 }
 
 #[post("/graphql", data = "<request>")]

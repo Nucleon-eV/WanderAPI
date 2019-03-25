@@ -1,4 +1,4 @@
-use juniper::{FieldError, FieldResult};
+use juniper::FieldResult;
 
 use crate::database::WanderAPIDbConn;
 use crate::graphql::models::*;
