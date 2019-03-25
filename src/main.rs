@@ -27,6 +27,7 @@ const USAGE: &'static str = "
 Wander API
 
 Usage:
+  WanderAPI
   WanderAPI (-h | --help)
 
 Options:
