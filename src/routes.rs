@@ -18,7 +18,7 @@ pub fn graphiql() -> content::Html<String> {
     juniper_rocket::graphiql_source("/graphql")
 }
 
-#[get("/graphql?<request>")]
+#[get("/graphql?query=<request>")]
 pub fn get_graphql_handler(
     context: WanderAPIDbConn,
     request: juniper_rocket::GraphQLRequest,
