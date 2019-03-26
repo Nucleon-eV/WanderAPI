@@ -42,5 +42,5 @@ pub fn post_graphql_handler(
 #[catch(405)]
 pub fn method_not_allowed() -> Template {
     let context: HashMap<i32, i32> = HashMap::new();
-    Template::render("405", &context)
+    Template::render("errors/405", &context)
 }
