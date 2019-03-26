@@ -13,6 +13,7 @@ extern crate rocket_contrib;
 extern crate serde_derive;
 
 use docopt::Docopt;
+use rocket_contrib::templates::Template;
 
 use database::WanderAPIDbConn;
 
@@ -61,6 +62,7 @@ fn main() {
 
     rocket::ignite()
         .attach(WanderAPIDbConn::fairing())
+        .attach(Template::fairing())
         .manage(Schema::new(
             Query,
             Mutation,
@@ -70,6 +72,7 @@ fn main() {
             routes::get_graphql_handler,
             routes::post_graphql_handler
         ])
+        .register(catchers![routes::method_not_allowed])
         .mount("/graphiql", routes![routes::graphiql])
         .launch();
 }
