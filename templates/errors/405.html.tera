@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base" %}
 {% block title %}405{% endblock title %}
 {% block content %}
     <h1>405 - Method not allowed</h1>

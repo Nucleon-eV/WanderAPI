@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use juniper::RootNode;
-use rocket::{get, post, Request, Response};
+use rocket::{get, post, Response};
 use rocket::http::Status;
 use rocket::response::content;
 use rocket::State;
