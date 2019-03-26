@@ -1,5 +1,8 @@
+use diesel::prelude::*;
 use juniper::{FieldError, FieldResult};
 use rocket_contrib::databases::diesel;
+
+use crate::models::{HikingTrailDB, NewHikingTrailDB, NewPOIDB, PoiDB};
 
 #[derive(juniper::GraphQLObject)]
 #[graphql(description = "A hiking trail")]
@@ -36,98 +39,142 @@ pub struct NewPOI {
 }
 
 impl HikingTrail {
-    pub fn hiking_trail(conn: &diesel::PgConnection, id: i32) -> FieldResult<HikingTrail> {
-        let hiking_trail_db = &conn.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id])?;
-        if hiking_trail_db.len() == 0 {
-            Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
-        } else {
-            let first_result = &hiking_trail_db.get(0);
-            let mut pois = Vec::new();
-            for poi_row in &conn.query("SELECT id, name, description, location FROM pois WHERE hiking_trail = $1", &[&id]).unwrap() {
-                let poi = POI {
-                    id: poi_row.get(0),
-                    name: poi_row.get(1),
-                    description: poi_row.get(2),
-                    location: poi_row.get(3),
-                };
-                pois.push(poi);
-            }
-            let hiking_trail = HikingTrail { id: first_result.get(0), name: first_result.get(1), location: first_result.get(2), pois: pois };
-            // Return the result.
-            Ok(hiking_trail)
+    pub fn hiking_trail(conn: &diesel::PgConnection, id_l: i32) -> FieldResult<HikingTrail> {
+        use crate::schema::hiking_trails::dsl::*;
+        use crate::schema::pois::dsl::pois;
+        use crate::schema::pois::columns::hiking_trail;
+
+        let hiking_trail_db = hiking_trails
+            .filter(id.eq(id_l))
+            .limit(1)
+            .first::<HikingTrailDB>(conn)
+            .expect("Error loading data");
+
+        let mut pois_list = Vec::new();
+        let poi_row_db = pois
+            .filter(hiking_trail.eq(id_l))
+            .load::<PoiDB>(conn)
+            .expect("Error loading data");
+
+        for poi_row in poi_row_db {
+            let poi = POI {
+                id: poi_row.id,
+                name: poi_row.name,
+                description: poi_row.description,
+                location: poi_row.location,
+            };
+            pois_list.push(poi);
         }
+        let hiking_trail_graphql = HikingTrail { id: hiking_trail_db.id, name: hiking_trail_db.name, location: hiking_trail_db.location, pois: pois_list };
+        // Return the result.
+        Ok(hiking_trail_graphql)
     }
 
 
     pub fn hiking_trails(conn: &diesel::PgConnection) -> FieldResult<Vec<HikingTrail>> {
-        let mut hiking_trails = Vec::new();
-        for trail in &conn.query("SELECT id, name, location FROM hiking_trails", &[]).unwrap() {
-            let mut pois = Vec::new();
-            let id: i32 = trail.get(0);
-            for poi_row in &conn.query("SELECT id, name, description, location FROM pois WHERE hiking_trail = $1", &[&id]).unwrap() {
-                let poi = POI {
-                    id: poi_row.get(0),
-                    name: poi_row.get(1),
-                    description: poi_row.get(2),
-                    location: poi_row.get(3),
-                };
-                pois.push(poi);
-            }
-            let hiking_trail = HikingTrail {
-                id,
-                name: trail.get(1),
-                location: trail.get(2),
-                pois,
-            };
-            hiking_trails.push(hiking_trail);
-        }
-        if hiking_trails.len() == 0 {
+        use crate::schema::hiking_trails::dsl::*;
+        use crate::schema::pois::dsl::pois;
+        use crate::schema::pois::columns::hiking_trail;
+
+        let mut hiking_trails_list = Vec::new();
+
+        let hiking_trail_db = hiking_trails
+            .load::<HikingTrailDB>(conn)
+            .expect("Error loading data");
+        if hiking_trail_db.len() == 0 {
             Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
         } else {
+            for hiking_trail_row in hiking_trail_db {
+                let mut pois_list = Vec::new();
+                let poi_row_db = pois
+                    .filter(hiking_trail.eq(hiking_trail_row.id))
+                    .load::<PoiDB>(conn)
+                    .expect("Error loading data");
+
+                for poi_row in poi_row_db {
+                    let poi = POI {
+                        id: poi_row.id,
+                        name: poi_row.name,
+                        description: poi_row.description,
+                        location: poi_row.location,
+                    };
+                    pois_list.push(poi);
+                }
+                let hiking_trail_graphql = HikingTrail { id: hiking_trail_row.id, name: hiking_trail_row.name, location: hiking_trail_row.location, pois: pois_list };
+                hiking_trails_list.push(hiking_trail_graphql);
+            }
             // Return the result.
-            Ok(hiking_trails)
+            Ok(hiking_trails_list)
         }
     }
 }
 
 impl NewHikingTrail {
     pub fn create_hiking_trail(conn: &diesel::PgConnection, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
-        let hiking_trail_db = conn.query("INSERT INTO hiking_trails (name, location) VALUES ($1, $2) RETURNING id, name, location", &[&new_hiking_trail.name, &new_hiking_trail.location])?;
-        if hiking_trail_db.len() == 0 {
-            Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
-        } else {
-            let first_result = &hiking_trail_db.get(0);
-            let id: i32 = first_result.get(0);
-            let mut pois = Vec::new();
-            for poi_row in &conn.query("SELECT id, name, description, location FROM pois WHERE hiking_trail = $1", &[&id]).unwrap() {
-                let poi = POI {
-                    id: poi_row.get(0),
-                    name: poi_row.get(1),
-                    description: poi_row.get(2),
-                    location: poi_row.get(3),
-                };
-                pois.push(poi);
-            }
-            let hiking_trail = HikingTrail { id, name: first_result.get(1), location: first_result.get(2), pois };
-            Ok(hiking_trail)
+        use crate::schema::hiking_trails;
+        use crate::schema::pois::dsl::pois;
+        use crate::schema::pois::columns::hiking_trail;
+
+        let new_hiking_trail_db = NewHikingTrailDB {
+            name: new_hiking_trail.name.as_str(),
+            location: new_hiking_trail.location.as_str(),
+        };
+
+        let added_hiking_trail_db: HikingTrailDB = diesel::insert_into(hiking_trails::table)
+            .values(&new_hiking_trail_db)
+            .get_result(conn)
+            .expect("Error saving new hiking trail");
+
+        let mut pois_list = Vec::new();
+        let poi_row_db = pois
+            .filter(hiking_trail.eq(added_hiking_trail_db.id))
+            .load::<PoiDB>(conn)
+            .expect("Error loading data");
+
+        for poi_row in poi_row_db {
+            let poi = POI {
+                id: poi_row.id,
+                name: poi_row.name,
+                description: poi_row.description,
+                location: poi_row.location,
+            };
+            pois_list.push(poi);
         }
+
+        let added_hiking_trail = HikingTrail {
+            id: added_hiking_trail_db.id,
+            name: added_hiking_trail_db.name,
+            location: added_hiking_trail_db.location,
+            pois: pois_list,
+        };
+
+        Ok(added_hiking_trail)
     }
 }
 
 impl NewPOI {
     pub fn create_poi(conn: &diesel::PgConnection, new_poi: NewPOI) -> FieldResult<POI> {
-        let poi_db = conn.query("INSERT INTO pois (hiking_trail, name, description, location) VALUES ($1, $2, $3, $4) RETURNING id, name, description, location", &[&new_poi.hiking_trail, &new_poi.name, &new_poi.description, &new_poi.location])?;
-        if poi_db.len() == 0 {
-            Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
-        } else {
-            let first_result = &poi_db.get(0);
-            let poi = POI {
-                id: first_result.get(0),
-                name: first_result.get(1),
-                description: first_result.get(2),
-                location: first_result.get(3),
-            };
-            Ok(poi)
-        }
+        use crate::schema::pois;
+
+        let new_poi_db = NewPOIDB {
+            hiking_trail: &new_poi.hiking_trail,
+            name: new_poi.name.as_str(),
+            description: new_poi.description.as_str(),
+            location: new_poi.location.as_str(),
+        };
+
+        let added_poi_db: PoiDB = diesel::insert_into(pois::table)
+            .values(&new_poi_db)
+            .get_result(conn)
+            .expect("Error saving new hiking trail");
+
+        let added_poi = POI {
+            id: added_poi_db.id,
+            name: added_poi_db.name,
+            description: added_poi_db.description,
+            location: added_poi_db.location,
+        };
+
+        Ok(added_poi)
     }
 }
