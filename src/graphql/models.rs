@@ -1,6 +1,5 @@
 use juniper::{FieldError, FieldResult};
-
-use crate::database::WanderAPIDbConn;
+use rocket_contrib::databases::diesel;
 
 #[derive(juniper::GraphQLObject)]
 #[graphql(description = "A hiking trail")]
@@ -37,7 +36,7 @@ pub struct NewPOI {
 }
 
 impl HikingTrail {
-    pub fn hiking_trail(conn: &WanderAPIDbConn, id: i32) -> FieldResult<HikingTrail> {
+    pub fn hiking_trail(conn: &diesel::PgConnection, id: i32) -> FieldResult<HikingTrail> {
         let hiking_trail_db = &conn.query("SELECT id, name, location FROM hiking_trails WHERE id = $1", &[&id])?;
         if hiking_trail_db.len() == 0 {
             Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
@@ -60,7 +59,7 @@ impl HikingTrail {
     }
 
 
-    pub fn hiking_trails(conn: &WanderAPIDbConn) -> FieldResult<Vec<HikingTrail>> {
+    pub fn hiking_trails(conn: &diesel::PgConnection) -> FieldResult<Vec<HikingTrail>> {
         let mut hiking_trails = Vec::new();
         for trail in &conn.query("SELECT id, name, location FROM hiking_trails", &[]).unwrap() {
             let mut pois = Vec::new();
@@ -92,7 +91,7 @@ impl HikingTrail {
 }
 
 impl NewHikingTrail {
-    pub fn create_hiking_trail(conn: &WanderAPIDbConn, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
+    pub fn create_hiking_trail(conn: &diesel::PgConnection, new_hiking_trail: NewHikingTrail) -> FieldResult<HikingTrail> {
         let hiking_trail_db = conn.query("INSERT INTO hiking_trails (name, location) VALUES ($1, $2) RETURNING id, name, location", &[&new_hiking_trail.name, &new_hiking_trail.location])?;
         if hiking_trail_db.len() == 0 {
             Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
@@ -116,7 +115,7 @@ impl NewHikingTrail {
 }
 
 impl NewPOI {
-    pub fn create_poi(conn: &WanderAPIDbConn, new_poi: NewPOI) -> FieldResult<POI> {
+    pub fn create_poi(conn: &diesel::PgConnection, new_poi: NewPOI) -> FieldResult<POI> {
         let poi_db = conn.query("INSERT INTO pois (hiking_trail, name, description, location) VALUES ($1, $2, $3, $4) RETURNING id, name, description, location", &[&new_poi.hiking_trail, &new_poi.name, &new_poi.description, &new_poi.location])?;
         if poi_db.len() == 0 {
             Err(FieldError::new("No data found", graphql_value!({ "internal_warning": "No data found" })))
