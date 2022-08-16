@@ -10,7 +10,7 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-juniper = "0.11"
+juniper = "0.15"
 postgres-derive = "0.3"
 env_logger = "0.6.1"
 log = "0.4.6"
